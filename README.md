@@ -1,108 +1,92 @@
-Maze Generator & Pathfinding Visualizer
+Bisa. Kalau maksudmu jangan pakai writing block/editor, tapi langsung berikan dalam Markdown/code biasa yang bisa di-copy ke README.md di platform apa pun, berikut formatnya.
 
-A real-time maze generation and pathfinding visualizer built with C++ and Raylib.
+# Maze Generator & Pathfinding Visualizer
 
-This project demonstrates how fundamental algorithms and data structures can be applied to an interactive grid-based environment. It focuses on procedural maze generation, graph traversal, backtracking, path reconstruction, and finite state machines (FSM) through real-time visualization.
+An interactive maze generation and pathfinding visualizer built with **C++** and **Raylib**.
 
-The application allows users to generate randomized mazes and visually compare Breadth-First Search (BFS) and Depth-First Search (DFS) pathfinding behavior.
+This project demonstrates how fundamental algorithms and data structures can be applied to a grid-based environment through real-time visualization. It combines **procedural maze generation, graph traversal, backtracking, path reconstruction, and finite state machines** into an interactive application.
 
-Features
+The system allows users to generate randomized mazes and visualize how **Breadth-First Search (BFS)** and **Depth-First Search (DFS)** explore the maze and construct paths to a target.
+
+> **Note:** This project was developed as a learning project to explore graph algorithms, data structures, procedural generation, and real-time visualization using C++ and Raylib.
+
+## Overview
+
+Maze Generator & Pathfinding Visualizer was developed as a practical project for understanding graph algorithms and fundamental C++ data structures through visual interaction.
+
+The application consists of two main algorithmic stages:
+
+1. **Maze Generation** — creates a randomized perfect maze using stack-based DFS backtracking.
+2. **Pathfinding** — searches for a route between the start and target positions using either BFS or DFS.
+
+Each algorithm runs incrementally across rendering frames, allowing the user to observe the traversal and decision-making process in real time.
+
+A simple **Finite State Machine (FSM)** controls the application flow and ensures that maze generation, pathfinding, user interaction, and rendering operate in predictable states.
+
+## Key Features
+
+- Randomized perfect maze generation
+- Stack-based DFS backtracking
+- Randomized neighbor selection
+- Four-directional wall management
+- Step-by-step maze generation
+- Breadth-First Search pathfinding
+- Depth-First Search pathfinding
+- Shortest-path reconstruction with BFS
+- Parent relationship tracking
+- Real-time traversal visualization
+- Finite State Machine for application flow
+- Interactive custom UI
+- Grid-based maze representation
+- Visual comparison between BFS and DFS
+
+## Algorithm Architecture
+
+The application follows a multi-stage algorithmic pipeline:
+
+```text
+Application Start
+       |
+       v
+     IDLE
+       |
+       v
+ Generate Maze
+       |
+       v
+Randomized DFS
+ Backtracking
+       |
+       v
+  Maze Complete
+       |
+       v
+    WAITING
+       |
+    +--+--+
+    |     |
+    v     v
+   BFS   DFS
+    |     |
+    +--+--+
+       |
+       v
+Path Reconstruction
+       |
+       v
+  Display Result
+       |
+       v
+    WAITING
+
+
+The state machine prevents incompatible operations from running simultaneously. For example, pathfinding cannot begin while the maze is still being generated.
+
 Maze Generation
 
-The maze is generated using a randomized, stack-based Depth-First Search backtracking algorithm.
+The maze generator uses a randomized Depth-First Search backtracking algorithm implemented with std::stack.
 
-Randomized neighbor selection
-Stack-based backtracking
-Four-directional wall management
-Step-by-step generation visualization
-Generates a perfect maze
-Real-time algorithm visualization
-Breadth-First Search
-
-BFS is implemented to find the shortest path through the generated unweighted maze.
-
-Uses std::queue
-Tracks visited cells
-Stores parent relationships
-Reconstructs the final path
-Visualizes the search process in real time
-Guarantees the shortest path when all movements have equal cost
-Depth-First Search
-
-DFS is implemented as an alternative pathfinding algorithm to demonstrate depth-oriented graph traversal.
-
-Uses std::stack
-Performs depth-first traversal
-Tracks visited cells
-Stores parent relationships
-Reconstructs the discovered path
-Provides a direct comparison with BFS traversal behavior
-Does not guarantee the shortest path in a general unweighted graph
-Finite State Machine
-
-A simple Finite State Machine (FSM) controls the application's workflow and prevents incompatible operations from running simultaneously.
-
-+-----------+
-|   IDLE    |
-+-----+-----+
-      |
-      v
-+-------------------+
-|  GENERATE MAZE    |
-+---------+---------+
-          |
-          v
-+-------------------+
-|     WAITING       |
-+---------+---------+
-          |
-       +--+--+
-       |     |
-       v     v
-     +---+ +---+
-     |BFS| |DFS|
-     +---+ +---+
-       |     |
-       +--+--+
-          |
-          v
-+-------------------+
-|     WAITING       |
-+-------------------+
-
-
-Application states:
-
-FASE_IDLE
-FASE_GENERATE_MAZE
-FASE_MENUNGGU
-FASE_BFS_JALAN
-FASE_DFS_JALAN
-
-
-The state system keeps maze generation, pathfinding, user interaction, and rendering flow predictable and prevents multiple algorithms from running at the same time.
-
-Architecture
-
-The application uses a grid-based representation of the maze and several fundamental C++ standard library data structures.
-
-Component	Purpose
-cell	Stores cell state and wall information
-GridPos	Represents a grid coordinate
-std::stack	Used for maze generation and DFS traversal
-std::queue	Used for BFS traversal
-std::vector	Stores temporary neighbors and reconstructed paths
-GameState	Controls the current application state
-CustomButton	Handles UI interaction
-Peta	Stores the maze grid
-AsalUsulBFS	Stores BFS parent relationships
-AsalUsulDFS	Stores DFS parent relationships
-Algorithms
-1. Maze Generation
-
-The maze generator uses randomized DFS backtracking.
-
-The algorithm follows this general process:
+The basic process is:
 
 Start
   |
@@ -122,21 +106,31 @@ Remove wall between cells
 Push neighbor onto stack
   |
   v
-Repeat
+Continue traversal
   |
-  +---- No neighbors ----> Pop stack
-                              |
-                              v
-                           Backtrack
+  +---- No unvisited neighbors ----+
+                                    |
+                                    v
+                              Pop from stack
+                                    |
+                                    v
+                                Backtrack
 
 
-The process continues until every cell has been visited.
+The process continues until every cell in the grid has been visited.
 
-By removing walls during DFS traversal and backtracking, the generator produces a perfect maze: a maze in which every cell is reachable and there is exactly one path between any two cells.
+Because the generator removes walls while traversing and backtracking, the resulting maze forms a perfect maze.
 
-2. Breadth-First Search
+A perfect maze has:
 
-BFS explores the maze level by level using a queue.
+Every cell reachable from every other cell
+No isolated regions
+Exactly one path between any two cells
+Breadth-First Search
+
+BFS is implemented to demonstrate shortest-path traversal in an unweighted grid.
+
+The algorithm uses std::queue and explores cells level by level.
 
 Start
   |
@@ -150,12 +144,12 @@ Queue
   +--> Neighbor
           |
           v
-       Continue
+      Continue
 
 
-Whenever a cell is discovered, its predecessor is stored in AsalUsulBFS.
+Whenever an unvisited cell is discovered, the system records its predecessor in AsalUsulBFS.
 
-Once the target is reached, the final path is reconstructed by following the parent relationships from the target back to the starting position.
+Once the target is reached, the path is reconstructed by following the predecessor relationships from the target back to the starting position.
 
 Target
   |
@@ -169,29 +163,123 @@ Parent
 Start
 
 
-Since every movement in the maze has the same cost, BFS guarantees the shortest path.
+Since every movement between adjacent cells has the same cost, BFS guarantees the shortest path in the generated maze.
 
-3. Depth-First Search
+Depth-First Search
 
-DFS explores the maze by following one branch as deeply as possible before backtracking.
+DFS is implemented as an alternative pathfinding algorithm using std::stack.
 
-A stack is used to manage the traversal, while AsalUsulDFS stores predecessor relationships for path reconstruction.
+Instead of exploring the maze level by level, DFS follows one branch as deeply as possible before backtracking.
 
-Unlike BFS, DFS does not guarantee the shortest path. Its primary purpose in this project is to demonstrate and visualize the difference between depth-first and breadth-first graph traversal.
+The traversal process can be summarized as:
 
-Tech Stack
-Language: C++
-Graphics Library: Raylib
-Data Structures: std::vector, std::stack, std::queue, 2D arrays
-Algorithms: DFS, BFS, randomized backtracking
-Concepts: Graph Traversal, Procedural Generation, Path Reconstruction, Finite State Machines
-Rendering: Raylib 2D primitives
-UI: Custom immediate-mode UI
+Start
+  |
+  v
+Stack
+  |
+  v
+Explore Neighbor
+  |
+  v
+Explore Deeper
+  |
+  v
+No Valid Neighbor
+  |
+  v
+Backtrack
+
+
+Like BFS, DFS stores predecessor relationships in AsalUsulDFS to reconstruct the discovered path.
+
+However, DFS does not guarantee the shortest path in a general unweighted graph. Its purpose in this project is primarily to demonstrate depth-first traversal and provide a direct visual comparison with BFS.
+
+Finite State Machine
+
+The application uses a simple Finite State Machine to manage its execution flow.
+
+The available states are:
+
+FASE_IDLE
+FASE_GENERATE_MAZE
+FASE_MENUNGGU
+FASE_BFS_JALAN
+FASE_DFS_JALAN
+
+State	Purpose
+FASE_IDLE	Initial application state
+FASE_GENERATE_MAZE	Runs the maze generation algorithm
+FASE_MENUNGGU	Waits for user interaction
+FASE_BFS_JALAN	Runs BFS pathfinding
+FASE_DFS_JALAN	Runs DFS pathfinding
+
+The FSM provides a clear separation between the application's major operations and prevents multiple algorithms from being executed at the same time.
+
+Data Structures
+
+The project uses several fundamental C++ data structures to implement the algorithms.
+
+Data Structure	Usage
+std::stack	Maze generation and DFS traversal
+std::queue	BFS traversal
+std::vector	Temporary neighbor lists and path storage
+2D arrays	Grid and cell representation
+GridPos	Represents grid coordinates
+AsalUsulBFS	Stores BFS predecessor relationships
+AsalUsulDFS	Stores DFS predecessor relationships
+
+These structures demonstrate how standard C++ containers can be applied to graph traversal and backtracking problems.
+
+Project Architecture
+
+The maze is represented as a two-dimensional grid.
+
+Each cell stores its state and wall information, while GridPos represents a position within the grid.
+
+The main components are:
+
+Component	Responsibility
+cell	Stores cell state and wall information
+GridPos	Represents grid coordinates
+Peta	Stores the maze grid
+AsalUsulBFS	Stores BFS parent relationships
+AsalUsulDFS	Stores DFS parent relationships
+GameState	Controls the application state
+CustomButton	Handles UI interaction
+
+The current implementation keeps most of the application logic in main.cpp to keep the project simple and focused on the underlying algorithms.
+
+Visualization
+
+The application uses different colors to represent the state of the maze and pathfinding process.
+
+Element	Color
+Maze background	Light
+Maze walls	Dark
+Start position	Red
+Target position	Green
+BFS exploration	Blue
+BFS path	Yellow
+DFS exploration	Red
+DFS path	Purple
+
+The algorithms are processed incrementally across rendering frames so that each stage of the traversal can be observed visually.
+
+Technology Stack
+Technology	Purpose
+C++	Core programming language
+Raylib	Graphics and rendering
+std::vector	Dynamic collections and path storage
+std::stack	DFS and maze generation
+std::queue	BFS traversal
+2D Arrays	Grid representation
+Custom UI	User interaction
 Requirements
 
 Before building the project, make sure the following are installed and configured:
 
-A C++ compiler
+C++ compiler
 GCC / MinGW
 Clang
 MSVC
@@ -205,52 +293,55 @@ Example compilation command for Windows:
 g++ main.cpp -o PathfindingVisualizer.exe -O2 -Wall -I include/ -L lib/ -lraylib -lopengl32 -lgdi32 -lwinmm
 
 
-The exact command may need to be adjusted depending on your Raylib installation, directory structure, and compiler configuration.
+The exact command may need to be adjusted depending on the Raylib installation, compiler, and project directory structure.
 
 Running
 
-After successfully compiling the project, run:
+After compilation, run:
 
 PathfindingVisualizer.exe
 
 Usage
 Launch the application.
 Select Generate Maze.
-Wait until maze generation is complete.
+Wait until the maze generation process is complete.
 Select Start BFS to visualize Breadth-First Search.
 Select Start DFS to visualize Depth-First Search.
-Select Generate Maze again to reset the board and generate a new maze.
-Visualization
-Element	Color
-Maze background	Light
-Maze walls	Dark
-Start position	Red
-Target position	Green
-BFS exploration	Blue
-BFS path	Yellow
-DFS exploration	Red
-DFS path	Purple
+Generate a new maze to reset the board and start another visualization.
 
-The visualization is designed to make the behavior of each algorithm observable while it is running rather than only displaying the final result.
+The application prevents pathfinding from starting while maze generation is still in progress.
 
 Project Structure
+Maze-Generator-Pathfinding-Visualizer/
+│
+├── main.cpp
+├── README.md
+│
+├── include/
+│   └── ...
+│
+├── lib/
+│   └── ...
+│
+└── assets/
+    └── screenshots/
+        ├── maze-generation.png
+        ├── bfs-pathfinding.png
+        └── dfs-pathfinding.png
 
-The current implementation is intentionally kept compact, with most application logic contained in:
 
-main.cpp
-
-
-The project may be refactored into separate headers, source files, and modules as development continues.
+Update the structure above to match the actual repository contents.
 
 Learning Objectives
 
-This project was created as a practical exercise to understand and visualize:
+This project was created to practice and visualize several fundamental Computer Science and C++ concepts:
 
 C++ Standard Library data structures
 Stack-based algorithms
 Queue-based algorithms
 Graph traversal
 DFS backtracking
+BFS shortest-path traversal
 Path reconstruction
 Grid-based graph representation
 Procedural maze generation
@@ -258,36 +349,39 @@ Finite State Machines
 Frame-based algorithm visualization
 Basic UI implementation with Raylib
 
-Rather than treating the algorithms as purely theoretical concepts, the project provides a visual representation of how they behave step by step.
+The primary goal is to make algorithmic behavior easier to understand by connecting the underlying data structures and algorithms directly to a visual representation.
 
 Current Limitations
 
-The current implementation is intentionally focused on learning and algorithm visualization.
+The current implementation is intentionally focused on learning and visualization.
 
 Most application logic is contained in main.cpp
-Grid dimensions are defined as compile-time constants
+Grid dimensions are compile-time constants
 Cell size is fixed
 Build configuration relies on compiler commands
 No CMake configuration
 Algorithm statistics are not currently displayed
-Rendering and algorithm logic are not yet fully separated
+Rendering and algorithm logic are not fully separated
 No automated test suite
+Cross-platform build configuration is limited
 Future Improvements
 
-Planned or potential improvements include:
+Potential improvements for future versions include:
 
-Refactor the code into multiple classes and source files
+Refactor the application into multiple classes and source files
 Add CMake build configuration
-Display path length and visited-node statistics
-Support configurable grid dimensions
+Add path length and visited-node statistics
+Add configurable grid dimensions
 Add animation speed controls
 Implement Dijkstra's algorithm
 Implement A* pathfinding
 Improve separation between rendering and algorithm logic
 Add automated tests
 Improve cross-platform build support
+Add algorithm performance comparison
+Add configurable start and target positions
 License
 
 This project is currently intended as a personal learning and algorithm visualization project.
 
-If you plan to distribute, modify, or reuse this project, add an appropriate open-source license to the repository.
+If you plan to distribute or reuse the project, add an appropriate open-source license to the repository.
