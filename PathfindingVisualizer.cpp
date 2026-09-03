@@ -28,6 +28,11 @@ Color BtnHoverDFS  = { 240, 130, 140, 255 };
 Color DfsWater     = { 224, 108, 117, 60 };   // Air DFS
 Color PathColorDFS = { 198, 120, 221, 200 };   // Ungu Jalur Akhir
 
+Color Djiktra      = { 130, 208, 217, 255 };   // Warna Tombol Djikstra
+Color BtnHoverDjikstra  = { 150, 228, 237, 255 }; 
+Color DjikstraWater     = { 130, 208, 217, 60 };    // Air Djikstra
+Color PathColorDjikstra = { 152, 195, 121, 200 };   // Hijau Jalur Akhir Djikstra
+
 int TargetBarisDraw = GetRandomValue(0 , BarisSize - 1), TargetKolomDraw = KolomSize - 1;
 int StartBaris = GetRandomValue(0,BarisSize- 1), StartKolom = 0;
 
@@ -37,25 +42,41 @@ enum GameState {
     FASE_GENERATE_MAZE,
     FASE_MENUNGGU,
     FASE_BFS_JALAN,
-    FASE_DFS_JALAN
+    FASE_DFS_JALAN,
+    FASE_DJIKSTRA_JALAN
 };
 
 GameState statusGame = FASE_IDLE;
 
 // Global Variabel untuk menyimpan dll
 
+
+
 struct GridPos { // Struct untuk posisi baris dan kolom array
     int baris;
     int kolom;
 };
 
+struct NodePrioritas{
+    GridPos Posisi;
+    int Biaya;
+
+    bool operator>(const NodePrioritas &Lainnya) const{
+        return Biaya > Lainnya.Biaya;
+    }
+};
+
 std::stack<GridPos> s; // menyimpan koordinat DFS maze Generator.
 std::stack<GridPos> DFSstack; // meyimpan koordinat DFS Search path finding. 
+std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>> pq; // menyimpan Koordinat Djikstra.
+int CatatanWaktu[BarisSize][KolomSize];
 std::queue<GridPos> q; // Menyimpan koordinat  BFS Search.
 GridPos AsalUsulBFS[BarisSize][KolomSize]; // untuk menyimpan koordinat agar bisa backtrack koordinat BFS dan DFS agar ada path findingnya
 std::vector<GridPos> JalurTerpendekBFS; // untuk  backtrack di fucntion rekonstruksi 
 GridPos AsalUsulDFS[BarisSize][KolomSize]; // untuk menyimpan koordinat agar bisa backtrack koordinat BFS dan DFS agar ada path findingnya
 std::vector<GridPos> JalurTerpendekDFS;
+GridPos AsalUsulDjikstra[BarisSize][KolomSize]; // untuk menyimpan koordinat agar bisa backtrack koordinat Djikstra agar ada path findingnya
+std::vector<GridPos> JalurTerpendekDjikstra; //untuk  backtrack di fucntion rekonstruksi 
 
 // Fase 1 make a maze generator 
 // -- DONE -- 
@@ -165,7 +186,7 @@ void DrawPath(){
 }   
 
 //Fase 2 BFS Visualization As PathFinding Algorithm
-
+// -- Done --;
 // Membuat CekKondisi Sendiri untuk Algorithma ini.
 bool BFSIsVisited[BarisSize][KolomSize] = {0};
 
@@ -365,13 +386,99 @@ void DrawDFS(){
         }
 }
 
+// Fase 3 Djikstra
+
+void InitDjikstra(int BarisAwal, int KolomAwal){
+    for(int baris = 0; baris < BarisSize; baris++){
+        for(int kolom = 0; kolom < KolomSize; kolom++){
+            CatatanWaktu[baris][kolom] = 99999;
+        }
+    }
+
+    CatatanWaktu[BarisAwal][KolomAwal] = 0;
+    pq.push({{BarisAwal,KolomAwal}, 0 });
+}
+
+void RekonstruksiJalurDjikstra(){
+    int currRow = TargetBarisDraw;
+    int currCol = TargetKolomDraw;
+    while(currCol != StartKolom || currRow != StartBaris){
+        JalurTerpendekDjikstra.push_back({currRow,currCol});
+        int prevRow = AsalUsulDjikstra[currRow][currCol].baris;
+        int prevCol = AsalUsulDjikstra[currRow][currCol].kolom;
+    
+        currRow = prevRow;
+        currCol = prevCol;
+    }
+
+    JalurTerpendekDjikstra.push_back({StartBaris,StartKolom});
+}
+
+void DjikstraSearch(){
+    
+    int Dx[4] = {0,0,1,-1};
+    int Dy[4] = {1,-1,0,0};
+    if(!pq.empty()){
+        GridPos PosisiSaatIni = pq.top().Posisi;
+        int BiayaSaatIni = pq.top().Biaya;
+        pq.pop();
+        int biayaBaru = BiayaSaatIni + 1; //  Karena Weight dari setiap arah array adalah 1.
+
+        if(PosisiSaatIni.baris == TargetBarisDraw && PosisiSaatIni.kolom == TargetKolomDraw){
+            RekonstruksiJalurDjikstra();
+            statusGame = FASE_MENUNGGU;
+            return;
+        }
+        for(int i = 0; i < 4; i++){
+        int TargetBaris = PosisiSaatIni.baris + Dy[i];
+        int TargetKolom = PosisiSaatIni.kolom+ Dx[i];
+            if(TargetBaris >= 0 && TargetBaris < BarisSize
+            && TargetKolom >= 0 && TargetKolom < KolomSize && biayaBaru < CatatanWaktu[TargetBaris][TargetKolom]){
+                bool canMove = false;
+                if(Dx[i] == 1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallKanan == false) canMove = true;
+                else if(Dx[i] == -1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallKiri == false) canMove = true;
+                else if(Dy[i] == 1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallBawah == false) canMove = true;
+                else if(Dy[i] == -1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallAtas == false) canMove = true;
+                if(canMove){
+                    CatatanWaktu[TargetBaris][TargetKolom] = biayaBaru;
+                    AsalUsulDjikstra[TargetBaris][TargetKolom] = {PosisiSaatIni.baris, PosisiSaatIni.kolom};
+                    pq.push({{TargetBaris,TargetKolom}, biayaBaru});
+                    }   
+             }
+        }  
+    }
+}
+
+void DrawDjikstra(){
+    for(int baris = 0; baris < BarisSize; baris++){
+        for(int kolom = 0; kolom < KolomSize; kolom++){
+            int x = kolom * UkuranCell;
+            int y = (baris * UkuranCell) + HeaderHeight;
+            if(CatatanWaktu[baris][kolom] < 99999){ 
+                DrawRectangle(x,y, UkuranCell, UkuranCell, DjikstraWater);
+            }
+        }
+    }
+        for(int i = 0; i < JalurTerpendekDjikstra.size(); i++){
+            int KoordinatBaris = JalurTerpendekDjikstra[i].baris;
+            int KoordinatKolom = JalurTerpendekDjikstra[i].kolom;
+            int pixelX = KoordinatKolom * UkuranCell;
+            int pixelY = KoordinatBaris * UkuranCell + HeaderHeight;
+
+        DrawRectangle(pixelX,pixelY,UkuranCell,UkuranCell,PathColorDjikstra);
+        }
+}
+
 void ResetMaze() {
     while (!s.empty()) s.pop();
     while (!q.empty()) q.pop();
     while (!DFSstack.empty()) DFSstack.pop();
+    // pq nggak punya fungsi .clear(), cara paling aman adalah me-reassign queue kosong
+    pq = std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>>();
 
     JalurTerpendekBFS.clear();
     JalurTerpendekDFS.clear();
+    JalurTerpendekDjikstra.clear();
 
     for (int baris = 0; baris < BarisSize; baris++) {
         for (int kolom = 0; kolom < KolomSize; kolom++) {
@@ -383,6 +490,7 @@ void ResetMaze() {
 
             BFSIsVisited[baris][kolom] = false;
             DFSisVisited[baris][kolom] = false;
+            CatatanWaktu[baris][kolom] = 99999;
         }
     }
 }
@@ -420,18 +528,20 @@ struct CustomButton {
 void DrawModernUI() {
     // Background Header
     DrawRectangle(0, 0, LebarLayar, HeaderHeight, WebBgDark);
-    DrawText("MAZE VISUALIZER", 20, 28, 24, WHITE);
+    DrawText("MAZE VISUALIZER", 10, 28, 20, WHITE);
 
     bool isIdleOrWaiting = (statusGame == FASE_IDLE || statusGame == FASE_MENUNGGU);
 
-    // Bikin tombol menggunakan struct yang sudah rapi
-    CustomButton btnGen = { {280, 20, 160, 50}, "Generate Maze", BtnColor, BtnHover, isIdleOrWaiting };
-    CustomButton btnBFS = { {460, 20, 120, 50}, "Start BFS", BtnColor, BtnHover, statusGame == FASE_MENUNGGU };
-    CustomButton btnDFS = { {600, 20, 120, 50}, "Start DFS", BtnDFS, BtnHoverDFS, statusGame == FASE_MENUNGGU };
+    // Bikin tombol menggunakan struct yang sudah rapi (posisi X aku geser dikit biar pas 4 tombol)
+    CustomButton btnGen = { {240, 20, 150, 50}, "Generate Maze", BtnColor, BtnHover, isIdleOrWaiting };
+    CustomButton btnBFS = { {400, 20, 110, 50}, "Start BFS", BtnColor, BtnHover, statusGame == FASE_MENUNGGU };
+    CustomButton btnDFS = { {520, 20, 110, 50}, "Start DFS", BtnDFS, BtnHoverDFS, statusGame == FASE_MENUNGGU };
+    CustomButton btnDjikstra = { {640, 20, 140, 50}, "Start Djikstra", Djiktra, BtnHoverDjikstra, statusGame == FASE_MENUNGGU };
 
     btnGen.Draw();
     btnBFS.Draw();
     btnDFS.Draw();
+    btnDjikstra.Draw();
 
     // Logic Tombol
     if (btnGen.IsClicked() && btnGen.enabled) {
@@ -445,6 +555,7 @@ void DrawModernUI() {
     if (btnBFS.IsClicked() && btnBFS.enabled) {
         JalurTerpendekBFS.clear();
         JalurTerpendekDFS.clear(); // Bersihkan garis DFS jika ada
+        JalurTerpendekDjikstra.clear(); 
         for (int b = 0; b < BarisSize; b++) 
             for (int k = 0; k < KolomSize; k++) BFSIsVisited[b][k] = false;
         while (!q.empty()) q.pop();
@@ -456,12 +567,26 @@ void DrawModernUI() {
     if (btnDFS.IsClicked() && btnDFS.enabled) {
         JalurTerpendekDFS.clear();
         JalurTerpendekBFS.clear(); // Bersihkan garis BFS jika ada
+        JalurTerpendekDjikstra.clear();
         for (int b = 0; b < BarisSize; b++) 
             for (int k = 0; k < KolomSize; k++) DFSisVisited[b][k] = false;
         while (!DFSstack.empty()) DFSstack.pop();
         
         InitDFSSearch(StartBaris, StartKolom);
         statusGame = FASE_DFS_JALAN;
+    }
+    
+    // Logic Tombol Djikstra
+    if (btnDjikstra.IsClicked() && btnDjikstra.enabled) {
+        JalurTerpendekDFS.clear();
+        JalurTerpendekBFS.clear();
+        JalurTerpendekDjikstra.clear();
+        
+        // Kosongkan priority queue
+        pq = std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>>();
+        
+        InitDjikstra(StartBaris, StartKolom);
+        statusGame = FASE_DJIKSTRA_JALAN;
     }
 
     // Teks Status (Pojok Kanan)
@@ -473,14 +598,16 @@ void DrawModernUI() {
         case FASE_GENERATE_MAZE:    statusText = "Building Maze..."; statusColor = YELLOW; break;
         case FASE_BFS_JALAN:        statusText = "BFS Searching..."; statusColor = BtnHover; break;
         case FASE_DFS_JALAN:        statusText = "DFS Searching..."; statusColor = BtnHoverDFS; break;
+        case FASE_DJIKSTRA_JALAN:   statusText = "Djikstra Search..."; statusColor = BtnHoverDjikstra; break;
         case FASE_MENUNGGU:
             if (!JalurTerpendekBFS.empty()) { statusText = "BFS Done!"; statusColor = GREEN; }
             else if (!JalurTerpendekDFS.empty()) { statusText = "DFS Done!"; statusColor = GREEN; }
+            else if (!JalurTerpendekDjikstra.empty()) { statusText = "Djikstra Done!"; statusColor = GREEN; }
             else { statusText = "Maze Ready"; statusColor = GREEN; }
             break;
     }
     
-    DrawText(statusText, 800, 30, 20, statusColor);
+    DrawText(statusText, 820, 30, 20, statusColor);
 }
 
 
@@ -505,6 +632,9 @@ int main() {
             case FASE_DFS_JALAN:
                 DFSsearch();
                 break;
+            case FASE_DJIKSTRA_JALAN: // Tambahkan trigger update
+                DjikstraSearch();
+                break;
             default: break;
         }
 
@@ -517,6 +647,7 @@ int main() {
         // BUG FIX: Sekarang animasi searching digambar BAHKAN sebelum jalurnya ketemu
         if (statusGame == FASE_BFS_JALAN || !JalurTerpendekBFS.empty()) DrawBFS();
         if (statusGame == FASE_DFS_JALAN || !JalurTerpendekDFS.empty()) DrawDFS();
+        if (statusGame == FASE_DJIKSTRA_JALAN || !JalurTerpendekDjikstra.empty()) DrawDjikstra();
 
         DrawModernUI();
         
