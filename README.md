@@ -1,5 +1,3 @@
-
-```markdown
 # Maze Generator & Pathfinding Visualizer
 
 An interactive maze generation and pathfinding visualizer built with **C++** and **Raylib**.
