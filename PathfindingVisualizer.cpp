@@ -4,6 +4,7 @@
 #include <array>
 #include <stack>
 #include <queue>
+#include <cmath>
 
 const int LebarLayar = 1000;
 const int TinggiLayar = 800;
@@ -33,6 +34,11 @@ Color BtnHoverDjikstra  = { 150, 228, 237, 255 };
 Color DjikstraWater     = { 130, 208, 217, 60 };    // Air Djikstra
 Color PathColorDjikstra = { 152, 195, 121, 200 };   // Hijau Jalur Akhir Djikstra
 
+Color A      = {200, 122, 255, 255};   // Warna Tombol A*
+Color BtnHoverA  = { 190, 122, 255, 255 }; 
+Color AWater     = { 190, 125, 255, 60 };    // Air A*
+Color PathColorA = { 190, 125, 255, 200 };   // Ungu Jalur Akhir A*
+
 int TargetBarisDraw = GetRandomValue(0 , BarisSize - 1), TargetKolomDraw = KolomSize - 1;
 int StartBaris = GetRandomValue(0,BarisSize- 1), StartKolom = 0;
 
@@ -43,7 +49,8 @@ enum GameState {
     FASE_MENUNGGU,
     FASE_BFS_JALAN,
     FASE_DFS_JALAN,
-    FASE_DJIKSTRA_JALAN
+    FASE_DJIKSTRA_JALAN,
+    FASE_A_JALAN
 };
 
 GameState statusGame = FASE_IDLE;
@@ -77,6 +84,10 @@ GridPos AsalUsulDFS[BarisSize][KolomSize]; // untuk menyimpan koordinat agar bis
 std::vector<GridPos> JalurTerpendekDFS;
 GridPos AsalUsulDjikstra[BarisSize][KolomSize]; // untuk menyimpan koordinat agar bisa backtrack koordinat Djikstra agar ada path findingnya
 std::vector<GridPos> JalurTerpendekDjikstra; //untuk  backtrack di fucntion rekonstruksi 
+std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>> pqA; // menyimpan Koordinat A*
+GridPos AsalUsulA[BarisSize][KolomSize]; // untuk menyimpan koordinat agar bisa backtrack koordinat Djikstra agar ada path findingnya
+std::vector<GridPos> JalurTerpendekA; //untuk  backtrack di fucntion rekonstruksi.
+int CatatanWaktuA[BarisSize][KolomSize];
 
 // Fase 1 make a maze generator 
 // -- DONE -- 
@@ -387,7 +398,7 @@ void DrawDFS(){
 }
 
 // Fase 3 Djikstra
-
+// -- DONE  --
 void InitDjikstra(int BarisAwal, int KolomAwal){
     for(int baris = 0; baris < BarisSize; baris++){
         for(int kolom = 0; kolom < KolomSize; kolom++){
@@ -415,7 +426,6 @@ void RekonstruksiJalurDjikstra(){
 }
 
 void DjikstraSearch(){
-    
     int Dx[4] = {0,0,1,-1};
     int Dy[4] = {1,-1,0,0};
     if(!pq.empty()){
@@ -469,16 +479,115 @@ void DrawDjikstra(){
         }
 }
 
+//-- Fase 4 A* Algorithm --
+
+int HitungManhattan(int barisSekarang, int KolomSekarang, int TargetBarisDraw, int TargetKolomDraw){
+    return std::abs(barisSekarang - TargetBarisDraw) + std::abs(KolomSekarang - TargetKolomDraw); 
+}
+
+void InitA(int BarisAwal, int KolomAwal){
+    for(int baris = 0; baris < BarisSize; baris++){
+        for(int kolom = 0; kolom < KolomSize; kolom++){
+            CatatanWaktuA[baris][kolom] = 99999;
+            AsalUsulA[baris][kolom] = {-1, -1}; 
+        }
+    }
+    CatatanWaktuA[BarisAwal][KolomAwal] = 0;
+    int H_n = HitungManhattan(BarisAwal, KolomAwal, TargetBarisDraw, TargetKolomDraw);
+    int F_n = H_n;
+    pqA.push({{BarisAwal,KolomAwal}, F_n });
+}
+
+
+
+void RekonstruksiJalurA(){
+    int currRow = TargetBarisDraw;
+    int currCol = TargetKolomDraw;
+    while(currCol != StartKolom || currRow != StartBaris){
+        JalurTerpendekA.push_back({currRow,currCol});
+        int prevRow = AsalUsulA[currRow][currCol].baris;
+        int prevCol = AsalUsulA[currRow][currCol].kolom;
+    
+        currRow = prevRow;
+        currCol = prevCol;
+    }
+
+    JalurTerpendekA.push_back({StartBaris,StartKolom});
+}
+
+void ASeacrh(){
+    int Dx[4] = {0,0,1,-1};
+    int Dy[4] = {1,-1,0,0};
+
+    if (pqA.empty()) {
+        return;
+    }
+        GridPos PosisiSaatIni = pqA.top().Posisi;
+        pqA.pop();
+        int currentG = CatatanWaktuA[PosisiSaatIni.baris][PosisiSaatIni.kolom];
+        int biayaBaru = currentG + 1;
+        if(PosisiSaatIni.baris == TargetBarisDraw && PosisiSaatIni.kolom == TargetKolomDraw){
+            RekonstruksiJalurA();
+            statusGame = FASE_MENUNGGU;
+            return;
+        }
+        for(int i = 0; i < 4; i++){
+        int TargetBaris = PosisiSaatIni.baris + Dy[i];
+        int TargetKolom = PosisiSaatIni.kolom+ Dx[i];
+        if(TargetBaris >= 0 && TargetBaris < BarisSize
+            && TargetKolom >= 0 && TargetKolom < KolomSize && biayaBaru < CatatanWaktuA[TargetBaris][TargetKolom]){
+            bool canMove = false;
+            if(Dx[i] == 1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallKanan == false) canMove = true;
+            else if(Dx[i] == -1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallKiri == false) canMove = true;
+            else if(Dy[i] == 1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallBawah == false) canMove = true;
+            else if(Dy[i] == -1 && Peta[PosisiSaatIni.baris][PosisiSaatIni.kolom].WallAtas == false) canMove = true;
+
+            if(canMove){
+                CatatanWaktuA[TargetBaris][TargetKolom] = biayaBaru;
+                AsalUsulA[TargetBaris][TargetKolom] = {PosisiSaatIni.baris, PosisiSaatIni.kolom};
+                int H_n = HitungManhattan(TargetBaris, TargetKolom, TargetBarisDraw, TargetKolomDraw);
+                int F_n = biayaBaru + H_n;
+                pqA.push({{TargetBaris,TargetKolom}, F_n});
+            }else{
+                continue;
+            }   
+        }
+    }  
+}
+
+void DrawA(){
+    for(int baris = 0; baris < BarisSize; baris++){
+        for(int kolom = 0; kolom < KolomSize; kolom++){
+            int x = kolom * UkuranCell;
+            int y = (baris * UkuranCell) + HeaderHeight;
+            if(CatatanWaktuA[baris][kolom] < 99999){ 
+                DrawRectangle(x,y, UkuranCell, UkuranCell, AWater);
+            }
+        }
+    }
+        for(int i = 0; i < JalurTerpendekA.size(); i++){
+            int KoordinatBaris = JalurTerpendekA[i].baris;
+            int KoordinatKolom = JalurTerpendekA[i].kolom;
+            int pixelX = KoordinatKolom * UkuranCell;
+            int pixelY = KoordinatBaris * UkuranCell + HeaderHeight;
+
+        DrawRectangle(pixelX,pixelY,UkuranCell,UkuranCell,PathColorA);
+        }
+}
+
+
 void ResetMaze() {
     while (!s.empty()) s.pop();
     while (!q.empty()) q.pop();
     while (!DFSstack.empty()) DFSstack.pop();
     // pq nggak punya fungsi .clear(), cara paling aman adalah me-reassign queue kosong
     pq = std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>>();
+    pqA = std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>>();
 
     JalurTerpendekBFS.clear();
     JalurTerpendekDFS.clear();
     JalurTerpendekDjikstra.clear();
+    JalurTerpendekA.clear();
 
     for (int baris = 0; baris < BarisSize; baris++) {
         for (int kolom = 0; kolom < KolomSize; kolom++) {
@@ -491,6 +600,7 @@ void ResetMaze() {
             BFSIsVisited[baris][kolom] = false;
             DFSisVisited[baris][kolom] = false;
             CatatanWaktu[baris][kolom] = 99999;
+            CatatanWaktuA[baris][kolom] = 99999;
         }
     }
 }
@@ -528,20 +638,26 @@ struct CustomButton {
 void DrawModernUI() {
     // Background Header
     DrawRectangle(0, 0, LebarLayar, HeaderHeight, WebBgDark);
-    DrawText("MAZE VISUALIZER", 10, 28, 20, WHITE);
+    DrawText("MAZE VISUALIZER", 10, 28, 19 , WHITE);
 
     bool isIdleOrWaiting = (statusGame == FASE_IDLE || statusGame == FASE_MENUNGGU);
 
     // Bikin tombol menggunakan struct yang sudah rapi (posisi X aku geser dikit biar pas 4 tombol)
-    CustomButton btnGen = { {240, 20, 150, 50}, "Generate Maze", BtnColor, BtnHover, isIdleOrWaiting };
-    CustomButton btnBFS = { {400, 20, 110, 50}, "Start BFS", BtnColor, BtnHover, statusGame == FASE_MENUNGGU };
-    CustomButton btnDFS = { {520, 20, 110, 50}, "Start DFS", BtnDFS, BtnHoverDFS, statusGame == FASE_MENUNGGU };
-    CustomButton btnDjikstra = { {640, 20, 140, 50}, "Start Djikstra", Djiktra, BtnHoverDjikstra, statusGame == FASE_MENUNGGU };
+    const int ButtonY = 15;
+    const int ButtonHeight = 50;
+    const int ButtonGap = 10;
+
+    CustomButton btnGen       = {{190, ButtonY, 140, ButtonHeight}, "Generate Maze", BtnColor, BtnHover, isIdleOrWaiting};
+    CustomButton btnBFS       = {{340, ButtonY, 105, ButtonHeight}, "Start BFS", BtnColor, BtnHover, statusGame == FASE_MENUNGGU};
+    CustomButton btnDFS       = {{455, ButtonY, 105, ButtonHeight}, "Start DFS", BtnDFS, BtnHoverDFS, statusGame == FASE_MENUNGGU};
+    CustomButton btnDjikstra  = {{570, ButtonY, 120, ButtonHeight}, "Dijkstra", Djiktra, BtnHoverDjikstra, statusGame == FASE_MENUNGGU};
+    CustomButton btnASearch   = {{700, ButtonY, 100, ButtonHeight}, "Start A*", A, BtnHoverA, statusGame == FASE_MENUNGGU};
 
     btnGen.Draw();
     btnBFS.Draw();
     btnDFS.Draw();
     btnDjikstra.Draw();
+    btnASearch.Draw();
 
     // Logic Tombol
     if (btnGen.IsClicked() && btnGen.enabled) {
@@ -555,7 +671,8 @@ void DrawModernUI() {
     if (btnBFS.IsClicked() && btnBFS.enabled) {
         JalurTerpendekBFS.clear();
         JalurTerpendekDFS.clear(); // Bersihkan garis DFS jika ada
-        JalurTerpendekDjikstra.clear(); 
+        JalurTerpendekDjikstra.clear();
+        JalurTerpendekA.clear(); 
         for (int b = 0; b < BarisSize; b++) 
             for (int k = 0; k < KolomSize; k++) BFSIsVisited[b][k] = false;
         while (!q.empty()) q.pop();
@@ -568,6 +685,7 @@ void DrawModernUI() {
         JalurTerpendekDFS.clear();
         JalurTerpendekBFS.clear(); // Bersihkan garis BFS jika ada
         JalurTerpendekDjikstra.clear();
+        JalurTerpendekA.clear();
         for (int b = 0; b < BarisSize; b++) 
             for (int k = 0; k < KolomSize; k++) DFSisVisited[b][k] = false;
         while (!DFSstack.empty()) DFSstack.pop();
@@ -581,12 +699,27 @@ void DrawModernUI() {
         JalurTerpendekDFS.clear();
         JalurTerpendekBFS.clear();
         JalurTerpendekDjikstra.clear();
+        JalurTerpendekA.clear();
         
         // Kosongkan priority queue
         pq = std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>>();
         
         InitDjikstra(StartBaris, StartKolom);
         statusGame = FASE_DJIKSTRA_JALAN;
+    }
+
+    // Logic Tombol A*
+    if (btnASearch.IsClicked() && btnASearch.enabled) {
+        JalurTerpendekDFS.clear();
+        JalurTerpendekBFS.clear();
+        JalurTerpendekDjikstra.clear();
+        JalurTerpendekA.clear();
+        
+        // Kosongkan priority queue
+        pqA = std::priority_queue<NodePrioritas, std::vector<NodePrioritas>, std::greater<NodePrioritas>>();
+        
+        InitA(StartBaris, StartKolom);
+        statusGame = FASE_A_JALAN;
     }
 
     // Teks Status (Pojok Kanan)
@@ -599,10 +732,12 @@ void DrawModernUI() {
         case FASE_BFS_JALAN:        statusText = "BFS Searching..."; statusColor = BtnHover; break;
         case FASE_DFS_JALAN:        statusText = "DFS Searching..."; statusColor = BtnHoverDFS; break;
         case FASE_DJIKSTRA_JALAN:   statusText = "Djikstra Search..."; statusColor = BtnHoverDjikstra; break;
+        case FASE_A_JALAN:          statusText = "A* Search..."; statusColor = BtnHoverA; break;
         case FASE_MENUNGGU:
             if (!JalurTerpendekBFS.empty()) { statusText = "BFS Done!"; statusColor = GREEN; }
             else if (!JalurTerpendekDFS.empty()) { statusText = "DFS Done!"; statusColor = GREEN; }
             else if (!JalurTerpendekDjikstra.empty()) { statusText = "Djikstra Done!"; statusColor = GREEN; }
+            else if (!JalurTerpendekA.empty()) { statusText = "A* Done!"; statusColor = GREEN; }
             else { statusText = "Maze Ready"; statusColor = GREEN; }
             break;
     }
@@ -635,6 +770,9 @@ int main() {
             case FASE_DJIKSTRA_JALAN: // Tambahkan trigger update
                 DjikstraSearch();
                 break;
+            case FASE_A_JALAN:
+                ASeacrh();
+                break;
             default: break;
         }
 
@@ -648,9 +786,9 @@ int main() {
         if (statusGame == FASE_BFS_JALAN || !JalurTerpendekBFS.empty()) DrawBFS();
         if (statusGame == FASE_DFS_JALAN || !JalurTerpendekDFS.empty()) DrawDFS();
         if (statusGame == FASE_DJIKSTRA_JALAN || !JalurTerpendekDjikstra.empty()) DrawDjikstra();
+        if (statusGame == FASE_A_JALAN || !JalurTerpendekA.empty()) DrawA();
 
         DrawModernUI();
-        
         EndDrawing();
     }
 

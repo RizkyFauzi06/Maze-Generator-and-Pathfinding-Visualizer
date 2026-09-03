@@ -77,6 +77,14 @@ stateDiagram-v2
 * Evaluates paths based on movement cost using `std::priority_queue`.
 * While identical to BFS in an unweighted grid setup, it serves as the foundational implementation for future weighted terrain generation.
 
+**5. A* (A-Star)
+
+* Combines the actual movement cost g(n) with an estimated remaining cost h(n).
+* Uses a std::priority_queue to prioritize nodes with the lowest estimated total cost.
+* Calculates the evaluation function using: f(n) = g(n) + h(n)
+* Uses Manhattan distance as the heuristic: 
+  h(n) = |currentRow - targetRow| + |currentColumn - targetColumn| Because the maze allows movement only in four directions and every movement has a cost of 1, Manhattan distance is an appropriate heuristic for this grid. Stores the lowest known movement cost in CatatanWaktuA and parent coordinates in AsalUsulA. Reconstructs the final path once the target is reached.
+
 ---
 
 ## 🗄️ Data Structures
@@ -90,6 +98,8 @@ Standard C++ Template Library (STL) containers are heavily utilized to manipulat
 | `std::priority_queue` | Cost-based node evaluation for Dijkstra's Algorithm. |
 | `std::vector` | Temporary neighbor validation lists and path reconstruction storage. |
 | `2D Arrays` | Grid state, cellular wall management, and parent-node tracking. |
+| `struct GridPos` |	Stores grid coordinates using row and column values.
+| `struct NodePrioritas` |	Stores a grid position together with its priority/cost value for priority-queue processing.
 
 ---
 
@@ -105,7 +115,7 @@ The application maps specific colors to algorithm states for clear visual distin
 | **BFS** | Light Blue (Exploration) → Yellow (Shortest Path) |
 | **DFS** | Light Red (Exploration) → Purple (Discovered Path) |
 | **Dijkstra** | Teal (Exploration) → Green (Shortest Path) |
-
+| A*	Purple | (Exploration) → Purple (Final Path)
 ---
 
 ## 🚀 Build and Run Instructions
@@ -177,7 +187,7 @@ This project targets the practical implementation of:
 **Roadmap:**
 
 * [x] Implement Dijkstra's Algorithm.
-* [ ] Implement A* (A-Star) Algorithm with heuristic calculations.
+* [x] Implement A* (A-Star) Algorithm with heuristic calculations.
 * [ ] Refactor application into modular classes (e.g., `GridManager`, `Pathfinder`).
 * [ ] Add weighted terrains (mud, water) for Dijkstra/A* evaluation.
 * [ ] Introduce CMake configuration for cross-platform building.
