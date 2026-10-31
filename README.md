@@ -1,6 +1,6 @@
  <div align="center">
 
-# 🧩 Maze Generator & Pathfinding Visualizer
+# Maze Generator & Pathfinding Visualizer
 
 **Visualizing the logic behind maze generation and pathfinding algorithms.**
 
